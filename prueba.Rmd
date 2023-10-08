@@ -1,0 +1,4569 @@
+---
+title: "Ficha de Información Metropolitana"
+author:
+  - Universidad Autónoma Metropolitnana
+  - Lic. Martínez Rodriguez, Alvaro^["Lic. en Economía Universidad Autonóma Metropolitana, Unidad Azcapotzalco", martinez.alvaro61@gmail.com]
+  - Lic. Pérez Victorino, Leonardo^["Lic. en Economía Universidad Autonóma Metropolitana, Unidad Azcapotzalco", perezvictorinoleonardo@gmail.com]
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
+    theme: journal
+    includes:
+      in_header: 
+      - header.html
+params:
+  zona: "1.01"
+bibliography: citas.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(readxl)
+Base_unica <- read_excel("Bases de datos\\Base única.xlsx")
+```
+
+```{r include=FALSE}
+if(!exists("Base_unica")) { # verifica si el objeto Base_unica ya existe en la sesión de R
+  library(googlesheets4)
+  url.dat <-("https://docs.google.com/spreadsheets/d/1DFuaziPQsspFiGs7d0UvUT5TVWJuemNt113SrDESkSs/edit#gid=1789379895")
+  Base_unica <- read_sheet(url.dat)
+} # si el objeto no existe, descarga y almacena la base en el objeto Base_unica
+
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Obtener el nombre de todas las variables en la base de datos
+variables <- names(Base_unica)
+
+# Filtrar las variables que deseas utilizar
+variables_utilizar <- variables[variables != "ID_VIV"]
+
+# Utilizar las variables filtradas en tus cálculos o análisis
+Base_zona <- Base_unica[Base_unica$CVE_ZM == params$zona, variables_utilizar]
+
+```
+
+<div style="text-align: justify">
+
+<div/>
+
+La ficha de información metropolitana es una herramienta valiosa para la planificación territorial en zonas metropolitanas (ZM). Proporciona información censal en diferentes formatos, como gráficos, tablas y mapas, tanto de los Censos de Población y Vivienda, 2020 (CPV2020) como de los Censos Económicos de 1999, 2004, 2009, 2014 y 2019. Ambos publicados por el Instituto Nacional de Estadística y Geografía (INEGI).
+
+Este documento se compone de tres partes principales: Información general sobre la ZM, información sociodemográfica e información económica. La primera sección tiene como objetivo proporcionar información general sobre la zona metropolitana, de modo que muestra datos genereales como los municipios que la componen, superficie, población, etc.En la sección de datos sociodemográficos, se presenta información más detallada descrita en bloques como: Grupos poblacionales, Vivienda, Socioeconomicos, Educación, Salud e indicadores de desarrollo humano. El objetivo de esta sección es proporcionar información general sobre la zona metropolitana y su estructura poblacional. Para la tecera sección se presenta información de los CE de la siguiente forma:...
+
+## Información general de la Zona Metropolitana de `r unique(Base_zona$NOM_ZM)`
+
+Según [@Sedatu2018], la zona metropolitana se define como un área urbana que consta de una ciudad principal y su zona conurbada. Las zonas metropolitanas se caracterizan por tener una alta densidad de población y estar interconectadas por vías de transporte y comunicación. La zona metropolitana de `r unique(Base_zona$NOM_ZM)`, se localiza en `r unique(Base_zona$nom_ent)`. y esta compuesta por `r nrow(Base_zona[Base_zona$CVE_ZM == params$zona, "cv_mun", drop = FALSE])` municipios, que se muestran a continuación:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap= "Municipios de la zona metropolitana", fig.width=4, fig.height=4}
+library(scales)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(data.table)
+library(scales)
+library(dplyr)
+Base_zona_subset <- subset(Base_zona, select = c(nom_mun, cvegeo))
+
+# Cambiar nombres de columnas
+setnames(Base_zona_subset, c("Nombre", "Clave"))
+datatable(Base_zona_subset, 
+          caption = "Municipios",
+          options = list(pageLength = 10, lengthChange = FALSE, scrollX = TRUE, searching = FALSE),
+          rownames = FALSE,
+          width = "40%")
+
+```
+
+Además, se presenta un mapa de la zona metropolitana:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.width=4, fig.height=4, fig.cap= "Mapa de la zona metropolitana"}
+#Mapa de la zona metropolitana
+
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(tmap)
+library(tmaptools)
+library(RColorBrewer)
+library(cartogram)
+# Carga los datos del archivo shapefile
+municipios <- st_read("Bases de datos/cartografía/00mun.shp", quiet = TRUE)
+
+# Filtra los municipios de la zona metropolitana seleccionada
+municipios_zm <- municipios %>% filter(CVE_ZM == params$zona)
+
+# Activa el modo dinámico de tmap
+tmap_mode("view")
+
+#mapa 2
+tmap::tm_shape(municipios_zm) +
+  tmap::tm_borders() +
+  tmap::tm_fill("nom_ent", alpha = 0.3, legend.show = FALSE) +
+  tmap::tm_basemap(providers$OpenStreetMap, alpha = 0.5)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+# Calcula el área en unidades del objeto sf
+area <- st_area(municipios_zm)
+
+# Convierte el área a kilómetros cuadrados
+area_km2 <- area / 1000000
+```
+
+A continuación se presentan algunos datos generales sobre esta zona:
+
+-   Zona Metropolitana:`r unique(Base_zona$NOM_ZM)`
+-   Número de municipios: `r nrow(Base_zona[Base_zona$CVE_ZM == params$zona, "cv_mun", drop = FALSE])`
+-   Población total: `r format(sum(Base_zona$POBTOT), big.mark=",")`
+-   Superficie de la ZM: `r format(sum(round(area_km2, 2)), big.mark=",")`
+-   Densidad poblacional: `r format(round(sum(Base_zona$POBTOT)/sum(round(area_km2, 2)),digits= 3), big.mark=",")` Hab/Km\^2.
+-   Grado promedio de escolaridad: `r mean(Base_zona$GRAPROES)`
+
+## Información sociodemográfica
+
+La estructura de población de la zona metropolitana de `r unique(Base_zona$NOM_ZM)` se presenta en la una piramide poblacional ya que permite obtener una visión general de la distribución de la población por género y edad:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=4}
+#Piramide poblacional
+
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+require(RColorBrewer)
+
+# Sumar todos los registros para cada variable
+total_poblacion <- c(
+  sum(Base_zona$P_0A4_M), sum(Base_zona$P_5A9_M), sum(Base_zona$P_10A14_M),
+  sum(Base_zona$P_15A19_M), sum(Base_zona$P_20A24_M), sum(Base_zona$P_25A29_M),
+  sum(Base_zona$P_30A34_M), sum(Base_zona$P_35A39_M), sum(Base_zona$P_40A44_M),
+  sum(Base_zona$P_45A49_M), sum(Base_zona$P_50A54_M), sum(Base_zona$P_55A59_M),
+  sum(Base_zona$P_60A64_M), sum(Base_zona$P_65A69_M), sum(Base_zona$P_70A74_M),
+  sum(Base_zona$P_75A79_M), sum(Base_zona$P_80A84_M), sum(Base_zona$P_85YMAS_M),
+  sum(Base_zona$P_0A4_F), sum(Base_zona$P_5A9_F), sum(Base_zona$P_10A14_F),
+  sum(Base_zona$P_15A19_F), sum(Base_zona$P_20A24_F), sum(Base_zona$P_25A29_F),
+  sum(Base_zona$P_30A34_F), sum(Base_zona$P_35A39_F), sum(Base_zona$P_40A44_F),
+  sum(Base_zona$P_45A49_F), sum(Base_zona$P_50A54_F), sum(Base_zona$P_55A59_F),
+  sum(Base_zona$P_60A64_F), sum(Base_zona$P_65A69_F), sum(Base_zona$P_70A74_F),
+  sum(Base_zona$P_75A79_F), sum(Base_zona$P_80A84_F), sum(Base_zona$P_85YMAS_F)
+)
+# Crear una tabla con la información separada por edad, sexo y población
+# Crear una tabla con la información separada por edad, sexo y población
+edades <- c(
+  "0 a 4", "5 a 9", "10 a 14",
+  "15 a 19", "20 a 24", "25 a 29",
+  "30 a 34", "35 a 39", "40 a 44",
+  "45 a 49", "50 a 54", "55 a 59",
+  "60 a 64", "65 a 69", "70 a 74",
+  "75 a 79", "80 a 84", "85 y más")
+
+# Crear un vector con la información de género
+generos <- rep(c("M", "F"), each = 18)
+
+# Crear un vector con la información de población
+poblacion <- c(total_poblacion[1:18], total_poblacion[19:36])
+
+# Crear un data frame con la información
+tabla_poblacion <- data.frame(edad = edades, genero = generos, poblacion = poblacion)
+
+tabla_poblacion$poblacion<- ifelse(tabla_poblacion$genero == "M", -1*tabla_poblacion$poblacion, tabla_poblacion$poblacion)
+
+tabla_poblacion$edad <- factor(tabla_poblacion$edad, levels = unique(tabla_poblacion$edad))
+
+## Los gráficos piramidales son dos gráficos de barras con ejes invertidos
+piramide <- ggplot(tabla_poblacion, aes(x = edad, y = poblacion), ) +
+  geom_bar(data = subset(tabla_poblacion, genero == "F"), aes(fill = "F"), stat = "identity") +
+  geom_bar(data = subset(tabla_poblacion, genero == "M"), aes(fill = "M"), stat = "identity") +
+  scale_fill_manual(values=c("F"="#bc4ed8","M"="#1b004b")) +
+  scale_y_continuous(breaks = seq(-2, 2, 1), labels = paste0(abs(seq(-2, 2, 1)), "m")) +
+  coord_flip()+
+  labs(fill = "Sexo", x = "Edad", y = "Población") +
+  ggtitle("Gráfico Piramidal de Población")
+
+piramide
+
+```
+
+En el siguiente mapa se observa como se distribuye la población sobre la región:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.width=4, fig.height=4, fig.cap= "Distribución poblacional"}
+# Seleccionar las variables de interés y unirlas con la cartografía por la clave cvegeo
+municipios_unidos <- municipios_zm %>%
+  inner_join(Base_zona %>% select(cvegeo, POBTOT, POBFEM, POBMAS), by = "cvegeo")
+
+tmap_mode("view")
+# Definir el número de clases en el mapa temático
+if (nrow(municipios_unidos) < 5) {
+  num_classes <- nrow(municipios_unidos)
+} else {
+  num_classes <- 5
+}
+
+# Crear el mapa temático
+tmap::tm_shape(municipios_unidos) +
+  tmap::tm_borders() +
+  tmap::tm_fill("POBTOT", alpha = 0.4, title = "Población", style ="equal", n = num_classes) +
+  tmap::tm_basemap(providers$OpenStreetMap, alpha = 0.5)
+```
+
+### Grupos de población
+
+-   Población total respecto al país: `r round(sum(Base_zona$POBTOT) / sum(Base_unica$POBTOT), digits = 3) %>% percent()`. Este valor indica el peso poblacional de la zona metropolitana en relación con la población total de México.
+-   Población Masculina: `r round(sum(Base_zona$POBMAS) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+-   Población Femenina: `r round(sum(Base_zona$POBFEM) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+-   Relación M-F: `r round(sum(Base_zona$REL_H_M)/nrow(Base_zona),digits= 3)`. Este valor indica la proporción de hombres por cada mujer en la zona metropolitana.
+
+```{r eval=FALSE, fig.height=4, fig.width=4, message=FALSE, warning=FALSE, include=FALSE}
+
+# Agregar un cero a la izquierda de la variable cvegeo
+
+Base_zona$cvegeo <- sprintf("%05d", Base_zona$cvegeo)
+```
+
+### Vivienda
+
+El CPV 2020 también proporciona información sobre la vivienda en la zona metropolitana, a continuación se presentan los principales resultados:
+
+-   Número de viviendas habitadas: `r format(sum(Base_zona$TVIVHAB), scientific = FALSE, digits = 3)`
+-   Porcentaje de viviendas desocupadas:`r round(sum(Base_zona$VIVPAR_DES) / sum(Base_zona$VIVTOT), digits = 3) %>% percent()`
+-   Promedio de ocupantes por vivienda: `r round (sum(Base_zona$PROM_OCUP)/nrow(Base_zona), digits = 3)`
+-   Promedio de ocupantes por cuarto:`r sum(Base_zona$PRO_OCUP_C)/nrow(Base_zona)`
+-   Porcentaje de viviendas con servicios básicos:`r round(sum(Base_zona$VPH_C_SERV) / sum(Base_zona$TVIVHAB), digits = 3) %>% percent()`
+-   Porcentaje de viviendas sin bienes2: `r round(sum(Base_zona$VPH_SNBIEN) / sum(Base_zona$TVIVHAB), digits = 3) %>% percent()`
+-   Porcentaje de ocupantes en viviendas particulares que disponen de energía eléctrica, agua entubada y drenaje: `r round(sum(Base_zona$VPH_SNBIEN) / sum(Base_zona$TVIVHAB), digits = 3) %>% percent()`
+
+### Socioeconómicos
+
+La población en terminos de la poblacioón economicamente activa esta descrita por:
+
+-   Porcentaje de población de 12 años y más económicamente activa: `r round(sum(Base_zona$PEA) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+-   Porcentaje de población de 12 años y más no económicamente activa: `r round(sum(Base_zona$PE_INAC) / sum(Base_zona$POBTOT), digits = 3) %>% percent()` \`
+
+### Educación
+
+La educación de la zona metropolitana esta caracterizada por los siguientes estadísticos:
+
+-   Porcentaje de población de 15 años y más sin escolaridad:`r round(sum(Base_zona$P15YM_SE) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+-   Porcentaje de población de 15 años y más con al menos un grado aprobado en primaria: `r round(1-(sum(Base_zona$PE_INAC) / sum(Base_zona$POBTOT)), digits = 3) %>% percent()`
+-   Porcentaje de población de 15 años y más con educación básica completa: `r round(sum(Base_zona$P15SEC_CO) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+-   Porcentaje de población de 15 años y más con secundaria o equivalente incompleta:`r round(sum(Base_zona$P15SEC_IN) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+-   Porcentaje de población de 18 años y más con al menos un grado aprobado en educación media superior: `r round(sum(Base_zona$P18YM_PB) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+
+### Salud
+
+La situación de la afiliación a algún servico de salud es la siguiente:
+
+-   Porcentaje de población afiliada a servicios de salud: `r round(sum(Base_zona$PDER_SS) / sum(Base_zona$POBTOT), digits = 3) %>% percent()`
+-   Población sin afiliación a servicios de salud:`r format(sum(Base_zona$PSINDER), scientific = FALSE, digits = 3)`
+
+### Indicadores de desarrollo
+
+Finalmente se presentan tres indicadores de desarrollo; los índices son: índice de Desarrollo Humano (IDH), Índice de Marginación (IM) e Índice de Rezago Social (IRS).
+
+IDH es un indicador elaborado por el Programa de Naciones Unidas para el Desarrollo (PNUD), este busca medir la calidad de vida, así como el progreso socioeconómico de cada entidad y municipio; El cálculo del Índice de Desarrollo Humano se realiza a partir de las tres variables: esperanza de vida, educación e ingreso per cápita.
+
+- Muy Alto - IDH mayor de 1.
+- Alto - IDH entre 0.80 a 1.
+- Medio	- IDH entre 0.50 y 0.80.
+- Bajo - IDH entre 0 y 0.50
+- Muy Bajo	- IDH menores a 0.
+
+-  El promedio del IDH en 2020 para la zona metropolitana es de `r format(mean(Base_zona$IDH), scientific = FALSE, digits = 3)` según datos del PNUD. 
+
+El IM es un índice construido por el consejo Nacional de Población (CONAPO). Este índice considera 4 dimensiones estructurales para su construcción: vivienda, ingreso, educación y distribución de la población. El indice se puede ubicar en 5 estratos designados por la ténica de estratificación de Dalenius-Hodges..
+
+- Muy bajo 	(-1.52944, -1.15143)
+- Bajo	(-1.15143, -0.39539)
+- Medio	(-0.39539, -0.01738)
+- Alto 	(-0.01738,  0.73866) 
+- Muy alto 	(0.738660,  2.25073)
+
+- El promedio del IM en 2020 para la zona metropolitana es de `r format(mean(Base_zona$IM_2020), scientific = FALSE, digits = 3)` según datos del CONAPO.
+
+Por último, el IRS es construido por el Consejo Nacional de Evaluación de la Política de Desarrollo Social, CONEVAL, este índice incorpora indicadores de educación, de acceso a servicios de salud, de servicios básicos y tiene como finalidad ordenar los municipios según sus carencias sociales. Este índice, al igual que el IM, se clasifica en cinco estratos.
+
+- El promedio del IM en 2020 para la zona metropolitana es de `r format(mean(Base_zona$IRS), scientific = FALSE, digits = 3)` según datos del CONAPO.
+
+## Datos económicos. 
+
+Con base en la información de los subsectores de los 21 sectores principales de la clasificación del SCIAN, extraída de los Censos Económicos del INEGI durante el periodo de 1998-2018, se ha llevado a cabo la agrupación de los datos de cada municipio que pertenece a una zona metropolitana en cinco grandes sectores: Primarios, Construcción, Manufactura, Comercio y Servicios. Esta clasificación se basa en la metodología proporcionada por el INEGI. Se utilizaron las siguientes variables:
+
+* Unidades económicas (UE) [número de unidades]
+* Activiso fijos totales (AF) [miles de pesos a precios corrientes]
+* Formación bruta de capital fijo (FB) [miles de pesos a precios corrientes]
+* Producción bruta total (PB) [miles de pesos a precios corrientes]
+* Personal ocupado total (PO) [número de personas]
+* Total de remuneraciones (RE) [miles de pesos a precios corrientes]
+* Valor agregado censal bruto (VA) [miles de pesos a precios corrientes]
+
+Posteriormente, se replica la metodología utilizada por [@GarciaCastro2008] para estimar los coeficientes de participación relativa (PR), de localización de la actividad económica (QL), Hirschman-Herfindahl (HH) e Inverso de Hirschman-Herfindahl (IHH).
+
+
+$PR_ij$=$X_ij/X_in$
+
+$QL_ij$=$(X_ij⁄X_j )/(X_in⁄X_n)$ 
+
+$HH_ij$=$X_ij/X_in - X_j/X_n$
+
+$IHH_ij$=$1/(X_ij/X_in - X_j/X_n)$
+
+Donde:
+
+* $X_ij$= Variable económica del sector i en el municipio j 
+* $X_j$= Variable económica del total de los sectores en el municipio j  
+* $X_in$= Variable económica del sector i de la Zona Metropolitana del municipio j
+* $X_n$= Variable económica del total de los sectores de la Zona Metropolitana del municipio j
+
+### Cifras brutas {.tabset}
+#### 1999 {.tabset}
+##### UE
+```{r}
+library(tidyverse)
+library(DT)
+
+Cb991 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun", Primarios = "ue.pri_99", Construcción = "ue.con_99", Manufactura = "ue.man_99", Comercio = "ue.com_99", Servicios = "ue.ser_99")
+
+Cb991 <- Cb991 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb991,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+
+library(tidyverse)
+library(DT)
+
+Cb992 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "af.pri_99", Construcción = "af.con_99", Manufactura = "af.man_99", Comercio = "af.com_99", Servicios = "af.ser_99")
+
+Cb992 <- Cb992 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb992,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+Cb993 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "fb.pri_99", Construcción = "fb.con_99", Manufactura = "fb.man_99", Comercio = "fb.com_99", Servicios = "fb.ser_99")
+
+Cb993 <- Cb993 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb993,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+Cb994 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "pb.pri_99", Construcción = "pb.con_99", Manufactura = "pb.man_99", Comercio = "pb.com_99", Servicios = "pb.ser_99")
+
+Cb994 <- Cb994 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb994,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+Cb995 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "po.pri_99", Construcción = "po.con_99", Manufactura = "po.man_99", Comercio = "po.com_99", Servicios = "po.ser_99")
+
+Cb995 <- Cb995 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb995,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+Cb996 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "re.pri_99", Construcción = "re.con_99", Manufactura = "re.man_99", Comercio = "re.com_99", Servicios = "re.ser_99")
+
+Cb996 <- Cb996 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb996,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+Cb997 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "va.pri_99", Construcción = "va.con_99", Manufactura = "va.man_99", Comercio = "va.com_99", Servicios = "va.ser_99")
+
+Cb997 <- Cb997 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb997,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2004{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+Cb041 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "ue.pri_04", Construcción = "ue.con_04", Manufactura = "ue.man_04", Comercio = "ue.com_04", Servicios = "ue.ser_04")
+
+Cb041 <- Cb041 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb041,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+Cb042 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "af.pri_04", Construcción = "af.con_04", Manufactura = "af.man_04", Comercio = "af.com_04", Servicios = "af.ser_04")
+
+Cb042 <- Cb042 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb042,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+Cb043 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "fb.pri_04", Construcción = "fb.con_04", Manufactura = "fb.man_04", Comercio = "fb.com_04", Servicios = "fb.ser_04")
+
+Cb043 <- Cb043 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb043,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+Cb044 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "pb.pri_04", Construcción = "pb.con_04", Manufactura = "pb.man_04", Comercio = "pb.com_04", Servicios = "pb.ser_04")
+
+Cb044 <- Cb044 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb044,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+Cb045 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "po.pri_04", Construcción = "po.con_04", Manufactura = "po.man_04", Comercio = "po.com_04", Servicios = "po.ser_04")
+
+Cb045 <- Cb045 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb045,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+Cb046 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "re.pri_04", Construcción = "re.con_04", Manufactura = "re.man_04", Comercio = "re.com_04", Servicios = "re.ser_04")
+
+Cb046 <- Cb046 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb046,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+Cb047 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "va.pri_04", Construcción = "va.con_04", Manufactura = "va.man_04", Comercio = "va.com_04", Servicios = "va.ser_04")
+
+Cb047 <- Cb047 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb047,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+#### 2009{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+Cb091 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "ue.pri_09", Construcción = "ue.con_09", Manufactura = "ue.man_09", Comercio = "ue.com_09", Servicios = "ue.ser_09")
+
+Cb091 <- Cb091 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb091,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+Cb092 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "af.pri_09", Construcción = "af.con_09", Manufactura = "af.man_09", Comercio = "af.com_09", Servicios = "af.ser_09")
+
+Cb092 <- Cb092 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb092,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+Cb093 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "fb.pri_09", Construcción = "fb.con_09", Manufactura = "fb.man_09", Comercio = "fb.com_09", Servicios = "fb.ser_09")
+
+Cb093 <- Cb093 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb093,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+Cb094 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "pb.pri_09", Construcción = "pb.con_09", Manufactura = "pb.man_09", Comercio = "pb.com_09", Servicios = "pb.ser_09")
+
+Cb094 <- Cb094 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb094,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+Cb095 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "po.pri_09", Construcción = "po.con_09", Manufactura = "po.man_09", Comercio = "po.com_09", Servicios = "po.ser_09")
+
+Cb095 <- Cb095 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb095,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+Cb096 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "re.pri_09", Construcción = "re.con_09", Manufactura = "re.man_09", Comercio = "re.com_09", Servicios = "re.ser_09")
+
+Cb096 <- Cb096 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb096,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+Cb097 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "va.pri_09", Construcción = "va.con_09", Manufactura = "va.man_09", Comercio = "va.com_09", Servicios = "va.ser_09")
+
+Cb097 <- Cb097 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb097,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+#### 2014{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+Cb141 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "ue.pri_14", Construcción = "ue.con_14", Manufactura = "ue.man_14", Comercio = "ue.com_14", Servicios = "ue.ser_14")
+
+Cb141 <- Cb141 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb141,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+Cb142 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "af.pri_14", Construcción = "af.con_14", Manufactura = "af.man_14", Comercio = "af.com_14", Servicios = "af.ser_14")
+
+Cb142 <- Cb142 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb142,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+Cb143 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "fb.pri_14", Construcción = "fb.con_14", Manufactura = "fb.man_14", Comercio = "fb.com_14", Servicios = "fb.ser_14")
+
+Cb143 <- Cb143 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb143,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+Cb144 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "pb.pri_14", Construcción = "pb.con_14", Manufactura = "pb.man_14", Comercio = "pb.com_14", Servicios = "pb.ser_14")
+
+Cb144 <- Cb144 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb144,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+Cb145 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "po.pri_14", Construcción = "po.con_14", Manufactura = "po.man_14", Comercio = "po.com_14", Servicios = "po.ser_14")
+
+Cb145 <- Cb145 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb145,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+Cb146 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "re.pri_14", Construcción = "re.con_14", Manufactura = "re.man_14", Comercio = "re.com_14", Servicios = "re.ser_14")
+
+Cb146 <- Cb146 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb146,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+Cb147 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "va.pri_14", Construcción = "va.con_14", Manufactura = "va.man_14", Comercio = "va.com_14", Servicios = "va.ser_14")
+
+Cb147 <- Cb147 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb147,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+#### 2019{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+Cb191 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "ue.pri_19", Construcción = "ue.con_19", Manufactura = "ue.man_19", Comercio = "ue.com_19", Servicios = "ue.ser_19")
+
+Cb191 <- Cb191 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb191,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+Cb192 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "af.pri_19", Construcción = "af.con_19", Manufactura = "af.man_19", Comercio = "af.com_19", Servicios = "af.ser_19")
+
+Cb192 <- Cb192 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb192,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+Cb193 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "fb.pri_19", Construcción = "fb.con_19", Manufactura = "fb.man_19", Comercio = "fb.com_19", Servicios = "fb.ser_19")
+
+Cb193 <- Cb193 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb193,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+Cb194 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "pb.pri_19", Construcción = "pb.con_19", Manufactura = "pb.man_19", Comercio = "pb.com_19", Servicios = "pb.ser_19")
+
+Cb194 <- Cb194 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb194,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+Cb195 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "po.pri_19", Construcción = "po.con_19", Manufactura = "po.man_19", Comercio = "po.com_19", Servicios = "po.ser_19")
+
+Cb195 <- Cb195 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb195,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+Cb196 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "re.pri_19", Construcción = "re.con_19", Manufactura = "re.man_19", Comercio = "re.com_19", Servicios = "re.ser_19")
+
+Cb196 <- Cb196 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb196,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+Cb197 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "va.pri_19", Construcción = "va.con_19", Manufactura = "va.man_19", Comercio = "va.com_19", Servicios = "va.ser_19")
+
+Cb197 <- Cb197 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(., big.mark = ",")))
+
+datatable(Cb197,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+### {-}
+### Coeficientes de localización (QL) {.tabset}
+#### 1999 {.tabset}
+##### UE
+```{r}
+library(tidyverse)
+QL991 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_99", Construcción = "QLue.con_99", Manufactura = "QLue.man_99", Comercio = "QLue.com_99", Servicios = "QLue.ser_99")
+# Aplicar formato a las columnas numéricas
+
+QL991 <- QL991 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL991,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+QL992 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLaf.pri_99", Construcción = "QLaf.con_99", Manufactura = "QLaf.man_99", Comercio = "QLaf.com_99", Servicios = "QLaf.ser_99")
+
+# Aplicar formato a las columnas numéricas
+QL992 <- QL992 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL992,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+QL993 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_99", Construcción = "QLue.con_99", Manufactura = "QLue.man_99", Comercio = "QLue.com_99", Servicios = "QLue.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+QL993 <- QL993 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL993,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+QL994 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpb.pri_99", Construcción = "QLpb.con_99", Manufactura = "QLpb.man_99", Comercio = "QLpb.com_99", Servicios = "QLpb.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+QL994 <- QL994 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL994,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+QL995 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpo.pri_99", Construcción = "QLpo.con_99", Manufactura = "QLpo.man_99", Comercio = "QLpo.com_99", Servicios = "QLpo.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+QL995 <- QL995 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL995,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+QL996 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLre.pri_99", Construcción = "QLre.con_99", Manufactura = "QLre.man_99", Comercio = "QLre.com_99", Servicios = "QLre.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+QL996 <- QL996 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL996,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+QL997 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLva.pri_99", Construcción = "QLva.con_99", Manufactura = "QLva.man_99", Comercio = "QLva.com_99", Servicios = "QLva.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+QL997 <- QL997 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL997,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2004{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+QL041 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_04", Construcción = "QLue.con_04", Manufactura = "QLue.man_04", Comercio = "QLue.com_04", Servicios = "QLue.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+QL041 <- QL041 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL041,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+QL042 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLaf.pri_04", Construcción = "QLaf.con_04", Manufactura = "QLaf.man_04", Comercio = "QLaf.com_04", Servicios = "QLaf.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+QL042 <- QL042 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+
+datatable(QL042,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+QL043 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_04", Construcción = "QLue.con_04", Manufactura = "QLue.man_04", Comercio = "QLue.com_04", Servicios = "QLue.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+QL043 <- QL043 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL043,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+QL044 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpb.pri_04", Construcción = "QLpb.con_04", Manufactura = "QLpb.man_04", Comercio = "QLpb.com_04", Servicios = "QLpb.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+QL044 <- QL044 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL044,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+QL045 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpo.pri_04", Construcción = "QLpo.con_04", Manufactura = "QLpo.man_04", Comercio = "QLpo.com_04", Servicios = "QLpo.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+QL045 <- QL045 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL045,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+QL046 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLre.pri_04", Construcción = "QLre.con_04", Manufactura = "QLre.man_04", Comercio = "QLre.com_04", Servicios = "QLre.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+QL046 <- QL046 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL046,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+QL047 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLva.pri_04", Construcción = "QLva.con_04", Manufactura = "QLva.man_04", Comercio = "QLva.com_04", Servicios = "QLva.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+QL047 <- QL047 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL047,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2009{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+QL091 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_09", Construcción = "QLue.con_09", Manufactura = "QLue.man_09", Comercio = "QLue.com_09", Servicios = "QLue.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+QL091 <- QL091 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL091,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+QL092 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLaf.pri_09", Construcción = "QLaf.con_09", Manufactura = "QLaf.man_09", Comercio = "QLaf.com_09", Servicios = "QLaf.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+QL092 <- QL092 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL092,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+QL093 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_09", Construcción = "QLue.con_09", Manufactura = "QLue.man_09", Comercio = "QLue.com_09", Servicios = "QLue.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+QL093 <- QL093 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL093,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+QL094 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpb.pri_09", Construcción = "QLpb.con_09", Manufactura = "QLpb.man_09", Comercio = "QLpb.com_09", Servicios = "QLpb.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+QL094 <- QL094 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL094,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+QL095 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpo.pri_09", Construcción = "QLpo.con_09", Manufactura = "QLpo.man_09", Comercio = "QLpo.com_09", Servicios = "QLpo.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+QL095 <- QL095 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL095,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+QL096 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLre.pri_09", Construcción = "QLre.con_09", Manufactura = "QLre.man_09", Comercio = "QLre.com_09", Servicios = "QLre.ser_09")
+# Aplicar formato a las columnas numéricas
+
+QL096 <- QL096 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL096,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+QL097 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLva.pri_09", Construcción = "QLva.con_09", Manufactura = "QLva.man_09", Comercio = "QLva.com_09", Servicios = "QLva.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+QL097 <- QL097 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL097,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+#### 2014{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+QL141 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_14", Construcción = "QLue.con_14", Manufactura = "QLue.man_14", Comercio = "QLue.com_14", Servicios = "QLue.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+QL141 <- QL141 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL141,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+QL142 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLaf.pri_14", Construcción = "QLaf.con_14", Manufactura = "QLaf.man_14", Comercio = "QLaf.com_14", Servicios = "QLaf.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+QL142 <- QL142 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL142,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+QL143 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_14", Construcción = "QLue.con_14", Manufactura = "QLue.man_14", Comercio = "QLue.com_14", Servicios = "QLue.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+QL143 <- QL143 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL143,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+QL144 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpb.pri_14", Construcción = "QLpb.con_14", Manufactura = "QLpb.man_14", Comercio = "QLpb.com_14", Servicios = "QLpb.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+QL144 <- QL144 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL144,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+QL145 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpo.pri_14", Construcción = "QLpo.con_14", Manufactura = "QLpo.man_14", Comercio = "QLpo.com_14", Servicios = "QLpo.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+QL145 <- QL145 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL145,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+QL146 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLre.pri_14", Construcción = "QLre.con_14", Manufactura = "QLre.man_14", Comercio = "QLre.com_14", Servicios = "QLre.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+QL146 <- QL146 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL146,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+QL147 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLva.pri_14", Construcción = "QLva.con_14", Manufactura = "QLva.man_14", Comercio = "QLva.com_14", Servicios = "QLva.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+QL147 <- QL147 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL147,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2019{.tabset}
+##### UE
+```{r}
+library(tidyverse)
+QL191 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_19", Construcción = "QLue.con_19", Manufactura = "QLue.man_19", Comercio = "QLue.com_19", Servicios = "QLue.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+QL191 <- QL191 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL191,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+QL192 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLaf.pri_19", Construcción = "QLaf.con_19", Manufactura = "QLaf.man_19", Comercio = "QLaf.com_19", Servicios = "QLaf.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+QL192 <- QL192 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL192,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+QL193 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLue.pri_19", Construcción = "QLue.con_19", Manufactura = "QLue.man_19", Comercio = "QLue.com_19", Servicios = "QLue.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+QL193 <- QL193 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL193,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+QL194 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpb.pri_19", Construcción = "QLpb.con_19", Manufactura = "QLpb.man_19", Comercio = "QLpb.com_19", Servicios = "QLpb.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+QL194 <- QL194 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL194,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+QL195 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLpo.pri_19", Construcción = "QLpo.con_19", Manufactura = "QLpo.man_19", Comercio = "QLpo.com_19", Servicios = "QLpo.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+QL195 <- QL195 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL195,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+QL196 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLre.pri_19", Construcción = "QLre.con_19", Manufactura = "QLre.man_19", Comercio = "QLre.com_19", Servicios = "QLre.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+QL196 <- QL196 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL196,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+QL197 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "QLva.pri_19", Construcción = "QLva.con_19", Manufactura = "QLva.man_19", Comercio = "QLva.com_19", Servicios = "QLva.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+QL197 <- QL197 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(QL197,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+### {-}
+
+
+### Participación Relativa (PR) {.tabset}
+#### 1999 {.tabset}
+##### UE
+```{r}
+library(tidyverse)
+PR991 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_99", Construcción = "PRue.con_99", Manufactura = "PRue.man_99", Comercio = "PRue.com_99", Servicios = "PRue.ser_99")
+# Aplicar formato a las columnas numéricas
+
+PR991 <- PR991 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR991,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+PR992 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRaf.pri_99", Construcción = "PRaf.con_99", Manufactura = "PRaf.man_99", Comercio = "PRaf.com_99", Servicios = "PRaf.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+PR992 <- PR992 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR992,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+PR993 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_99", Construcción = "PRue.con_99", Manufactura = "PRue.man_99", Comercio = "PRue.com_99", Servicios = "PRue.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+PR993 <- PR993 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR993,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+PR994 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpb.pri_99", Construcción = "PRpb.con_99", Manufactura = "PRpb.man_99", Comercio = "PRpb.com_99", Servicios = "PRpb.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+PR994 <- PR994 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR994,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+PR995 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpo.pri_99", Construcción = "PRpo.con_99", Manufactura = "PRpo.man_99", Comercio = "PRpo.com_99", Servicios = "PRpo.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+PR995 <- PR995 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR995,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+PR996 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRre.pri_99", Construcción = "PRre.con_99", Manufactura = "PRre.man_99", Comercio = "PRre.com_99", Servicios = "PRre.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+PR996 <- PR996 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR996,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+PR997 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRva.pri_99", Construcción = "PRva.con_99", Manufactura = "PRva.man_99", Comercio = "PRva.com_99", Servicios = "PRva.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+PR997 <- PR997 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR997,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2004{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+PR041 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_04", Construcción = "PRue.con_04", Manufactura = "PRue.man_04", Comercio = "PRue.com_04", Servicios = "PRue.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+PR041 <- PR041 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR041,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+PR042 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRaf.pri_04", Construcción = "PRaf.con_04", Manufactura = "PRaf.man_04", Comercio = "PRaf.com_04", Servicios = "PRaf.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+PR042 <- PR042 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR042,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+PR043 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_04", Construcción = "PRue.con_04", Manufactura = "PRue.man_04", Comercio = "PRue.com_04", Servicios = "PRue.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+PR043 <- PR043 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR043,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+PR044 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpb.pri_04", Construcción = "PRpb.con_04", Manufactura = "PRpb.man_04", Comercio = "PRpb.com_04", Servicios = "PRpb.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+PR044 <- PR044 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR044,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+PR045 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpo.pri_04", Construcción = "PRpo.con_04", Manufactura = "PRpo.man_04", Comercio = "PRpo.com_04", Servicios = "PRpo.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+PR045 <- PR045 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR045,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+PR046 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRre.pri_04", Construcción = "PRre.con_04", Manufactura = "PRre.man_04", Comercio = "PRre.com_04", Servicios = "PRre.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+PR046 <- PR046 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR046,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+PR047 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRva.pri_04", Construcción = "PRva.con_04", Manufactura = "PRva.man_04", Comercio = "PRva.com_04", Servicios = "PRva.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+PR047 <- PR047 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR047,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2009{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+PR091 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_09", Construcción = "PRue.con_09", Manufactura = "PRue.man_09", Comercio = "PRue.com_09", Servicios = "PRue.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+PR091 <- PR091 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR091,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+PR092 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRaf.pri_09", Construcción = "PRaf.con_09", Manufactura = "PRaf.man_09", Comercio = "PRaf.com_09", Servicios = "PRaf.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+PR092 <- PR092 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR092,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+PR093 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_09", Construcción = "PRue.con_09", Manufactura = "PRue.man_09", Comercio = "PRue.com_09", Servicios = "PRue.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+PR093 <- PR093 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR093,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+PR094 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpb.pri_09", Construcción = "PRpb.con_09", Manufactura = "PRpb.man_09", Comercio = "PRpb.com_09", Servicios = "PRpb.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+PR094 <- PR094 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR094,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+PR095 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpo.pri_09", Construcción = "PRpo.con_09", Manufactura = "PRpo.man_09", Comercio = "PRpo.com_09", Servicios = "PRpo.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+PR095 <- PR095 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR095,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+PR096 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRre.pri_09", Construcción = "PRre.con_09", Manufactura = "PRre.man_09", Comercio = "PRre.com_09", Servicios = "PRre.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+PR096 <- PR096 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR096,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+PR097 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRva.pri_09", Construcción = "PRva.con_09", Manufactura = "PRva.man_09", Comercio = "PRva.com_09", Servicios = "PRva.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+PR097 <- PR097 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR097,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+#### 2014{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+PR141 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_14", Construcción = "PRue.con_14", Manufactura = "PRue.man_14", Comercio = "PRue.com_14", Servicios = "PRue.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+PR141 <- PR141 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR141,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+PR142 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRaf.pri_14", Construcción = "PRaf.con_14", Manufactura = "PRaf.man_14", Comercio = "PRaf.com_14", Servicios = "PRaf.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+PR142 <- PR142 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR142,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+PR143 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_14", Construcción = "PRue.con_14", Manufactura = "PRue.man_14", Comercio = "PRue.com_14", Servicios = "PRue.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+PR143 <- PR143 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR143,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+PR144 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpb.pri_14", Construcción = "PRpb.con_14", Manufactura = "PRpb.man_14", Comercio = "PRpb.com_14", Servicios = "PRpb.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+PR144 <- PR144 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR144,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+PR145 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpo.pri_14", Construcción = "PRpo.con_14", Manufactura = "PRpo.man_14", Comercio = "PRpo.com_14", Servicios = "PRpo.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+PR145 <- PR145 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR145,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+PR146 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRre.pri_14", Construcción = "PRre.con_14", Manufactura = "PRre.man_14", Comercio = "PRre.com_14", Servicios = "PRre.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+PR146 <- PR146 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR146,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+PR147 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRva.pri_14", Construcción = "PRva.con_14", Manufactura = "PRva.man_14", Comercio = "PRva.com_14", Servicios = "PRva.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+PR147 <- PR147 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR147,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2019{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+PR191 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_19", Construcción = "PRue.con_19", Manufactura = "PRue.man_19", Comercio = "PRue.com_19", Servicios = "PRue.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+PR191 <- PR191 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR191,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+PR192 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRaf.pri_19", Construcción = "PRaf.con_19", Manufactura = "PRaf.man_19", Comercio = "PRaf.com_19", Servicios = "PRaf.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+PR192 <- PR192 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR192,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+PR193 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRue.pri_19", Construcción = "PRue.con_19", Manufactura = "PRue.man_19", Comercio = "PRue.com_19", Servicios = "PRue.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+PR193 <- PR193 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR193,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+PR194 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpb.pri_19", Construcción = "PRpb.con_19", Manufactura = "PRpb.man_19", Comercio = "PRpb.com_19", Servicios = "PRpb.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+PR194 <- PR194 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR194,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+PR195 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRpo.pri_19", Construcción = "PRpo.con_19", Manufactura = "PRpo.man_19", Comercio = "PRpo.com_19", Servicios = "PRpo.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+PR195 <- PR195 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR195,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+PR196 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRre.pri_19", Construcción = "PRre.con_19", Manufactura = "PRre.man_19", Comercio = "PRre.com_19", Servicios = "PRre.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+PR196 <- PR196 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR196,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+PR197 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "PRva.pri_19", Construcción = "PRva.con_19", Manufactura = "PRva.man_19", Comercio = "PRva.com_19", Servicios = "PRva.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+PR197 <- PR197 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(PR197,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+### {-}
+
+### Hirschman-Herfindahl (HH) {.tabset}
+#### 1999 {.tabset}
+##### UE
+```{r}
+library(tidyverse)
+HH991 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_99", Construcción = "HHue.con_99", Manufactura = "HHue.man_99", Comercio = "HHue.com_99", Servicios = "HHue.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+HH991 <- HH991 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH991,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+HH992 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHaf.pri_99", Construcción = "HHaf.con_99", Manufactura = "HHaf.man_99", Comercio = "HHaf.com_99", Servicios = "HHaf.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+HH992 <- HH992 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH992,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+HH993 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_99", Construcción = "HHue.con_99", Manufactura = "HHue.man_99", Comercio = "HHue.com_99", Servicios = "HHue.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+HH993 <- HH993 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+
+datatable(HH993,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+HH994 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpb.pri_99", Construcción = "HHpb.con_99", Manufactura = "HHpb.man_99", Comercio = "HHpb.com_99", Servicios = "HHpb.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+HH994 <- HH994 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+
+datatable(HH994,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+HH995 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpo.pri_99", Construcción = "HHpo.con_99", Manufactura = "HHpo.man_99", Comercio = "HHpo.com_99", Servicios = "HHpo.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+HH995 <- HH995 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+
+datatable(HH995,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+HH996 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHre.pri_99", Construcción = "HHre.con_99", Manufactura = "HHre.man_99", Comercio = "HHre.com_99", Servicios = "HHre.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+HH996 <- HH996 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH996,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+HH997 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHva.pri_99", Construcción = "HHva.con_99", Manufactura = "HHva.man_99", Comercio = "HHva.com_99", Servicios = "HHva.ser_99")
+
+# Aplicar formato a las columnas numéricas
+
+HH997 <- HH997 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH997,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2004{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+HH041 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_04", Construcción = "HHue.con_04", Manufactura = "HHue.man_04", Comercio = "HHue.com_04", Servicios = "HHue.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+HH041 <- HH041 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH041,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+HH042 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHaf.pri_04", Construcción = "HHaf.con_04", Manufactura = "HHaf.man_04", Comercio = "HHaf.com_04", Servicios = "HHaf.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+HH042 <- HH042 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH042,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+HH043 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_04", Construcción = "HHue.con_04", Manufactura = "HHue.man_04", Comercio = "HHue.com_04", Servicios = "HHue.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+HH043 <- HH043 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH043,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+HH044 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpb.pri_04", Construcción = "HHpb.con_04", Manufactura = "HHpb.man_04", Comercio = "HHpb.com_04", Servicios = "HHpb.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+HH044 <- HH044 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH044,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+HH045 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpo.pri_04", Construcción = "HHpo.con_04", Manufactura = "HHpo.man_04", Comercio = "HHpo.com_04", Servicios = "HHpo.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+HH045 <- HH045 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH045,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+HH046 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHre.pri_04", Construcción = "HHre.con_04", Manufactura = "HHre.man_04", Comercio = "HHre.com_04", Servicios = "HHre.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+HH046 <- HH046 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH046,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+HH047 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHva.pri_04", Construcción = "HHva.con_04", Manufactura = "HHva.man_04", Comercio = "HHva.com_04", Servicios = "HHva.ser_04")
+
+# Aplicar formato a las columnas numéricas
+
+HH047 <- HH047 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH047,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2009{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+HH091 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_09", Construcción = "HHue.con_09", Manufactura = "HHue.man_09", Comercio = "HHue.com_09", Servicios = "HHue.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+HH091 <- HH091 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH091,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+HH092 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHaf.pri_09", Construcción = "HHaf.con_09", Manufactura = "HHaf.man_09", Comercio = "HHaf.com_09", Servicios = "HHaf.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+HH092 <- HH092 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH092,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+HH093 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_09", Construcción = "HHue.con_09", Manufactura = "HHue.man_09", Comercio = "HHue.com_09", Servicios = "HHue.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+HH093 <- HH093 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH093,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+HH094 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpb.pri_09", Construcción = "HHpb.con_09", Manufactura = "HHpb.man_09", Comercio = "HHpb.com_09", Servicios = "HHpb.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+HH094 <- HH094 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH094,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+HH095 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpo.pri_09", Construcción = "HHpo.con_09", Manufactura = "HHpo.man_09", Comercio = "HHpo.com_09", Servicios = "HHpo.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+HH095 <- HH095 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH095,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+HH096 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHre.pri_09", Construcción = "HHre.con_09", Manufactura = "HHre.man_09", Comercio = "HHre.com_09", Servicios = "HHre.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+HH096 <- HH096 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH096,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+HH097 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHva.pri_09", Construcción = "HHva.con_09", Manufactura = "HHva.man_09", Comercio = "HHva.com_09", Servicios = "HHva.ser_09")
+
+# Aplicar formato a las columnas numéricas
+
+HH097 <- HH097 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH097,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+#### 2014{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+HH141 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_14", Construcción = "HHue.con_14", Manufactura = "HHue.man_14", Comercio = "HHue.com_14", Servicios = "HHue.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+HH141 <- HH141 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH141,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+HH142 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHaf.pri_14", Construcción = "HHaf.con_14", Manufactura = "HHaf.man_14", Comercio = "HHaf.com_14", Servicios = "HHaf.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+HH142 <- HH142 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH142,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+HH143 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_14", Construcción = "HHue.con_14", Manufactura = "HHue.man_14", Comercio = "HHue.com_14", Servicios = "HHue.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+HH143 <- HH143 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH143,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+HH144 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpb.pri_14", Construcción = "HHpb.con_14", Manufactura = "HHpb.man_14", Comercio = "HHpb.com_14", Servicios = "HHpb.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+HH144 <- HH144 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH144,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+HH145 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpo.pri_14", Construcción = "HHpo.con_14", Manufactura = "HHpo.man_14", Comercio = "HHpo.com_14", Servicios = "HHpo.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+HH145 <- HH145 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH145,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+HH146 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHre.pri_14", Construcción = "HHre.con_14", Manufactura = "HHre.man_14", Comercio = "HHre.com_14", Servicios = "HHre.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+HH146 <- HH146 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+datatable(HH146,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+HH147 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHva.pri_14", Construcción = "HHva.con_14", Manufactura = "HHva.man_14", Comercio = "HHva.com_14", Servicios = "HHva.ser_14")
+
+# Aplicar formato a las columnas numéricas
+
+HH147 <- HH147 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH147,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2019{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+HH191 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_19", Construcción = "HHue.con_19", Manufactura = "HHue.man_19", Comercio = "HHue.com_19", Servicios = "HHue.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+HH191 <- HH191 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH191,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+HH192 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHaf.pri_19", Construcción = "HHaf.con_19", Manufactura = "HHaf.man_19", Comercio = "HHaf.com_19", Servicios = "HHaf.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+HH192 <- HH192 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH192,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+HH193 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHue.pri_19", Construcción = "HHue.con_19", Manufactura = "HHue.man_19", Comercio = "HHue.com_19", Servicios = "HHue.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+HH193 <- HH193 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH193,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+HH194 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpb.pri_19", Construcción = "HHpb.con_19", Manufactura = "HHpb.man_19", Comercio = "HHpb.com_19", Servicios = "HHpb.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+HH194 <- HH194 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH194,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+HH195 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHpo.pri_19", Construcción = "HHpo.con_19", Manufactura = "HHpo.man_19", Comercio = "HHpo.com_19", Servicios = "HHpo.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+HH195 <- HH195 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH195,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+HH196 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHre.pri_19", Construcción = "HHre.con_19", Manufactura = "HHre.man_19", Comercio = "HHre.com_19", Servicios = "HHre.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+HH196 <- HH196 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+datatable(HH196,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+HH197 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "HHva.pri_19", Construcción = "HHva.con_19", Manufactura = "HHva.man_19", Comercio = "HHva.com_19", Servicios = "HHva.ser_19")
+
+# Aplicar formato a las columnas numéricas
+
+HH197 <- HH197 %>%
+  mutate(across(starts_with("Primarios"):ends_with("Servicios"), ~ format(round(., 4), nsmall = 4)))
+
+
+datatable(HH197,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+### {-}
+
+### Inverso de Hirschman-Herfindahl (IHH) {.tabset}
+#### 1999 {.tabset}
+##### UE
+```{r}
+library(tidyverse)
+IHH991 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_99", Construcción = "IHHue.con_99", Manufactura = "IHHue.man_99", Comercio = "IHHue.com_99", Servicios = "IHHue.ser_99")
+# Aplicar formato a las columnas numéricas
+IHH991[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH991[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH991,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+IHH992 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHaf.pri_99", Construcción = "IHHaf.con_99", Manufactura = "IHHaf.man_99", Comercio = "IHHaf.com_99", Servicios = "IHHaf.ser_99")
+# Aplicar formato a las columnas numéricas
+IHH992[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH992[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH992,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+IHH993 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_99", Construcción = "IHHue.con_99", Manufactura = "IHHue.man_99", Comercio = "IHHue.com_99", Servicios = "IHHue.ser_99")
+# Aplicar formato a las columnas numéricas
+IHH993[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH993[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH993,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+IHH994 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpb.pri_99", Construcción = "IHHpb.con_99", Manufactura = "IHHpb.man_99", Comercio = "IHHpb.com_99", Servicios = "IHHpb.ser_99")
+# Aplicar formato a las columnas numéricas
+IHH994[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH994[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH994,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+IHH995 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpo.pri_99", Construcción = "IHHpo.con_99", Manufactura = "IHHpo.man_99", Comercio = "IHHpo.com_99", Servicios = "IHHpo.ser_99")
+# Aplicar formato a las columnas numéricas
+IHH995[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH995[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH995,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+IHH996 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHre.pri_99", Construcción = "IHHre.con_99", Manufactura = "IHHre.man_99", Comercio = "IHHre.com_99", Servicios = "IHHre.ser_99")
+# Aplicar formato a las columnas numéricas
+IHH996[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH996[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH996,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+IHH997 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHva.pri_99", Construcción = "IHHva.con_99", Manufactura = "IHHva.man_99", Comercio = "IHHva.com_99", Servicios = "IHHva.ser_99")
+# Aplicar formato a las columnas numéricas
+IHH997[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH997[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH997,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2004{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+IHH041 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_04", Construcción = "IHHue.con_04", Manufactura = "IHHue.man_04", Comercio = "IHHue.com_04", Servicios = "IHHue.ser_04")
+# Aplicar formato a las columnas numéricas
+IHH041[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH041[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH041,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+IHH042 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHaf.pri_04", Construcción = "IHHaf.con_04", Manufactura = "IHHaf.man_04", Comercio = "IHHaf.com_04", Servicios = "IHHaf.ser_04")
+# Aplicar formato a las columnas numéricas
+IHH042[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH042[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH042,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+IHH043 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_04", Construcción = "IHHue.con_04", Manufactura = "IHHue.man_04", Comercio = "IHHue.com_04", Servicios = "IHHue.ser_04")
+# Aplicar formato a las columnas numéricas
+IHH043[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH043[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH043,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+IHH044 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpb.pri_04", Construcción = "IHHpb.con_04", Manufactura = "IHHpb.man_04", Comercio = "IHHpb.com_04", Servicios = "IHHpb.ser_04")
+# Aplicar formato a las columnas numéricas
+IHH044[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH044[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH044,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+IHH045 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpo.pri_04", Construcción = "IHHpo.con_04", Manufactura = "IHHpo.man_04", Comercio = "IHHpo.com_04", Servicios = "IHHpo.ser_04")
+# Aplicar formato a las columnas numéricas
+IHH045[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH045[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH045,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+IHH046 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHre.pri_04", Construcción = "IHHre.con_04", Manufactura = "IHHre.man_04", Comercio = "IHHre.com_04", Servicios = "IHHre.ser_04")
+# Aplicar formato a las columnas numéricas
+IHH046[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH046[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH046,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+IHH047 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHva.pri_04", Construcción = "IHHva.con_04", Manufactura = "IHHva.man_04", Comercio = "IHHva.com_04", Servicios = "IHHva.ser_04")
+# Aplicar formato a las columnas numéricas
+IHH047[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH047[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH047,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2009{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+IHH091 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_09", Construcción = "IHHue.con_09", Manufactura = "IHHue.man_09", Comercio = "IHHue.com_09", Servicios = "IHHue.ser_09")
+# Aplicar formato a las columnas numéricas
+IHH091[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH091[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH091,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+IHH092 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHaf.pri_09", Construcción = "IHHaf.con_09", Manufactura = "IHHaf.man_09", Comercio = "IHHaf.com_09", Servicios = "IHHaf.ser_09")
+# Aplicar formato a las columnas numéricas
+IHH092[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH092[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH092,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+IHH093 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_09", Construcción = "IHHue.con_09", Manufactura = "IHHue.man_09", Comercio = "IHHue.com_09", Servicios = "IHHue.ser_09")
+# Aplicar formato a las columnas numéricas
+IHH093[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH093[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH093,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+IHH094 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpb.pri_09", Construcción = "IHHpb.con_09", Manufactura = "IHHpb.man_09", Comercio = "IHHpb.com_09", Servicios = "IHHpb.ser_09")
+# Aplicar formato a las columnas numéricas
+IHH094[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH094[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x)format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH094,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+IHH095 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpo.pri_09", Construcción = "IHHpo.con_09", Manufactura = "IHHpo.man_09", Comercio = "IHHpo.com_09", Servicios = "IHHpo.ser_09")
+# Aplicar formato a las columnas numéricas
+IHH095[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH095[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH095,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+IHH096 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHre.pri_09", Construcción = "IHHre.con_09", Manufactura = "IHHre.man_09", Comercio = "IHHre.com_09", Servicios = "IHHre.ser_09")
+# Aplicar formato a las columnas numéricas
+IHH096[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH096[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH096,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+IHH097 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHva.pri_09", Construcción = "IHHva.con_09", Manufactura = "IHHva.man_09", Comercio = "IHHva.com_09", Servicios = "IHHva.ser_09")
+# Aplicar formato a las columnas numéricas
+IHH097[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH097[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH097,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+#### 2014{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+IHH141 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_14", Construcción = "IHHue.con_14", Manufactura = "IHHue.man_14", Comercio = "IHHue.com_14", Servicios = "IHHue.ser_14")
+# Aplicar formato a las columnas numéricas
+IHH141[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH141[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH141,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+IHH142 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHaf.pri_14", Construcción = "IHHaf.con_14", Manufactura = "IHHaf.man_14", Comercio = "IHHaf.com_14", Servicios = "IHHaf.ser_14")
+# Aplicar formato a las columnas numéricas
+IHH142[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH142[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH142,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+IHH143 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_14", Construcción = "IHHue.con_14", Manufactura = "IHHue.man_14", Comercio = "IHHue.com_14", Servicios = "IHHue.ser_14")
+# Aplicar formato a las columnas numéricas
+IHH143[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH143[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH143,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+IHH144 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpb.pri_14", Construcción = "IHHpb.con_14", Manufactura = "IHHpb.man_14", Comercio = "IHHpb.com_14", Servicios = "IHHpb.ser_14")
+# Aplicar formato a las columnas numéricas
+IHH144[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH144[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH144,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+IHH145 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpo.pri_14", Construcción = "IHHpo.con_14", Manufactura = "IHHpo.man_14", Comercio = "IHHpo.com_14", Servicios = "IHHpo.ser_14")
+# Aplicar formato a las columnas numéricas
+IHH145[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH145[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH145,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+IHH146 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHre.pri_14", Construcción = "IHHre.con_14", Manufactura = "IHHre.man_14", Comercio = "IHHre.com_14", Servicios = "IHHre.ser_14")
+# Aplicar formato a las columnas numéricas
+IHH146[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH146[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH146,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+IHH147 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHva.pri_14", Construcción = "IHHva.con_14", Manufactura = "IHHva.man_14", Comercio = "IHHva.com_14", Servicios = "IHHva.ser_14")
+# Aplicar formato a las columnas numéricas
+IHH147[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH147[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH147,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+
+#### 2019{.tabset}
+
+##### UE
+```{r}
+library(tidyverse)
+IHH191 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_19", Construcción = "IHHue.con_19", Manufactura = "IHHue.man_19", Comercio = "IHHue.com_19", Servicios = "IHHue.ser_19")
+# Aplicar formato a las columnas numéricas
+IHH191[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH191[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH191,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### AF
+```{r}
+library(tidyverse)
+IHH192 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHaf.pri_19", Construcción = "IHHaf.con_19", Manufactura = "IHHaf.man_19", Comercio = "IHHaf.com_19", Servicios = "IHHaf.ser_19")
+# Aplicar formato a las columnas numéricas
+IHH192[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH192[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH192,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### FB
+```{r}
+library(tidyverse)
+IHH193 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHue.pri_19", Construcción = "IHHue.con_19", Manufactura = "IHHue.man_19", Comercio = "IHHue.com_19", Servicios = "IHHue.ser_19")
+# Aplicar formato a las columnas numéricas
+IHH193[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH193[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH193,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PB
+```{r}
+library(tidyverse)
+IHH194 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpb.pri_19", Construcción = "IHHpb.con_19", Manufactura = "IHHpb.man_19", Comercio = "IHHpb.com_19", Servicios = "IHHpb.ser_19")
+# Aplicar formato a las columnas numéricas
+IHH194[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH194[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH194,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### PO
+```{r}
+library(tidyverse)
+IHH195 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHpo.pri_19", Construcción = "IHHpo.con_19", Manufactura = "IHHpo.man_19", Comercio = "IHHpo.com_19", Servicios = "IHHpo.ser_19")
+# Aplicar formato a las columnas numéricas
+IHH195[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH195[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH195,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### RE
+```{r}
+library(tidyverse)
+IHH196 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHre.pri_19", Construcción = "IHHre.con_19", Manufactura = "IHHre.man_19", Comercio = "IHHre.com_19", Servicios = "IHHre.ser_19")
+# Aplicar formato a las columnas numéricas
+IHH196[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH196[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH196,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+##### VA
+```{r}
+library(tidyverse)
+IHH197 <- select(Base_zona, Clave = "cvegeo", Municipio = "nom_mun",Primarios = "IHHva.pri_19", Construcción = "IHHva.con_19", Manufactura = "IHHva.man_19", Comercio = "IHHva.com_19", Servicios = "IHHva.ser_19")
+# Aplicar formato a las columnas numéricas
+IHH197[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")] <- lapply(IHH197[, c("Primarios", "Construcción", "Manufactura", "Comercio", "Servicios")], function(x) format(x, big.mark = ",", decimal.mark = ".", digits = 4))
+datatable(IHH197,extensions = 'Buttons',
+          options = list(
+            pageLength = 10,
+            lengthChange = FALSE,
+            scrollX = TRUE,
+            searching = FALSE,
+             dom = 'Bfrtip',
+            buttons = list(list(
+              extend = 'excel',
+              text = '.xlsx',
+              className = 'btn btn-primary'
+            ))
+          ),
+          rownames = FALSE)
+```
+### {-}
